@@ -7,8 +7,6 @@ on:
 
 jobs:
   build:
-    if: contains(github.event.pull_request.labels.*.name, 'stage')
-
     runs-on: ubuntu-latest
 
     steps:
@@ -26,7 +24,7 @@ jobs:
     name: Deploy Node.js app to AWS
     needs: build
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v1
 
@@ -37,7 +35,27 @@ jobs:
           path: public
 
       - name: Deploy to AWS
-        uses: github/deploy-nodejs@master
+        uses: docker://admiralawkbar/aws-nodejs:latest
         env:
           AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
           AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
+
+  Build-and-Push-Docker-Image:
+    runs-on: ubuntu-latest
+    needs: build
+    name: Docker Build, Tag, Push
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+
+      - name: Download built artifact
+        uses: actions/download-artifact@master
+        with:
+          name: webpack artifacts
+          path: public
+
+      - name: Build, Tag, Push
+        uses: mattdavis0351/actions/docker-gpr@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKENA }}
+          image-name: tic-tac-toe
